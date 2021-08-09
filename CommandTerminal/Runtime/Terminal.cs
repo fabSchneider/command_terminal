@@ -12,6 +12,7 @@ namespace CommandTerminal
         OpenFull
     }
 
+    [AddComponentMenu("Grasp/Debug/Terminal")]
     public class Terminal : MonoBehaviour
     {
         [Header("Window")]
