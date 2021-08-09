@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## v1.3 `c9c7d89` - 2021-08-09
+
+### Added
+- Shell command component: shell commands can now be registered through gameObjects
+
+### Changed
+- Moved to package: the code has been moved into a package format to work with unity's package manager
+
 ## 1.02 `08a66da` - 2018-09-14
 
 ### Added
