@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v1.3.1 - 2021-11-27
+
+### Fixed
+- The shell is now looking for the RegisterCommandAttribute in all assemblies.
+
 ## v1.3 `c9c7d89` - 2021-08-09
 
 ### Added
