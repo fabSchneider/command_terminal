@@ -1,13 +1,13 @@
 {
-  "name": "com.stillwwater.commandterminal",
-  "version": "1.3.1",
+  "name": "com.fabschneider.commandterminal",
+  "version": "1.4.1",
   "displayName": "Command Terminal",
   "description": "Unity Command Terminal: In-Game Console\nbased on https://github.com/stillwwater/command_terminal",
   "unity": "2020.2",
   "unityRelease": "0f1",
   "keywords": [],
   "author": {
-    "name": "Stillwwater",
+    "name": "fabSchneider",
     "email": "",
     "url": "https://github.com/fabSchneider/command_terminal.git"
   }
