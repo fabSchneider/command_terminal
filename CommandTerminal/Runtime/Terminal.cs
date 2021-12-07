@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Text;
 using System.Collections;
 using UnityEngine.Assertions;
+using UnityEngine.InputSystem;
 
 namespace CommandTerminal
 {
@@ -28,8 +29,8 @@ namespace CommandTerminal
         [SerializeField]
         float ToggleSpeed = 360;
 
-        [SerializeField] string ToggleHotkey      = "`";
-        [SerializeField] string ToggleFullHotkey  = "#`";
+        [SerializeField] InputActionReference ToggleHotkey;     
+        [SerializeField] InputActionReference ToggleFullHotkey;
         [SerializeField] int BufferSize           = 512;
 
         [Header("Input")]
@@ -154,7 +155,6 @@ namespace CommandTerminal
 
             command_text = "";
             cached_command_text = command_text;
-            Assert.AreNotEqual(ToggleHotkey.ToLower(), "return", "Return is not a valid ToggleHotkey");
 
             SetupWindow();
             SetupInput();
@@ -172,10 +172,10 @@ namespace CommandTerminal
         }
 
         void OnGUI() {
-            if (Event.current.Equals(Event.KeyboardEvent(ToggleHotkey))) {
+            if (ToggleHotkey.action.WasReleasedThisFrame()) {
                 SetState(TerminalState.OpenSmall);
                 initial_open = true;
-            } else if (Event.current.Equals(Event.KeyboardEvent(ToggleFullHotkey))) {
+            } else if (ToggleFullHotkey.action.WasPressedThisFrame()) {
                 SetState(TerminalState.OpenFull);
                 initial_open = true;
             }
@@ -257,9 +257,9 @@ namespace CommandTerminal
                 move_cursor = true;
             } else if (Event.current.Equals(Event.KeyboardEvent("down"))) {
                 command_text = History.Next();
-            } else if (Event.current.Equals(Event.KeyboardEvent(ToggleHotkey))) {
+            } else if (ToggleHotkey.action.WasPressedThisFrame()) {
                 ToggleState(TerminalState.OpenSmall);
-            } else if (Event.current.Equals(Event.KeyboardEvent(ToggleFullHotkey))) {
+            } else if (Event.current.Equals(ToggleFullHotkey.action.WasPressedThisFrame())) {
                 ToggleState(TerminalState.OpenFull);
             } else if (Event.current.Equals(Event.KeyboardEvent("tab"))) {
                 CompleteCommand();

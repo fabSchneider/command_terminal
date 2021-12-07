@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## 1.4.0 - 2021-12-07
+
+### Changed
+- Terminal is now using the Input System for toggle hotkeys
+
 ## v1.3.1 - 2021-11-27
 
 ### Fixed
