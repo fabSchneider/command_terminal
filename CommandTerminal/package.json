@@ -1,6 +1,6 @@
 {
   "name": "com.fabschneider.commandterminal",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "displayName": "Command Terminal",
   "description": "Unity Command Terminal: In-Game Console\nbased on https://github.com/stillwwater/command_terminal",
   "unity": "2020.2",

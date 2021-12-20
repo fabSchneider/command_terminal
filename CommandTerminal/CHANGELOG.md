@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## 1.4.2 - 2021-12-20
+
+### Added
+- Methods for setting toggle actions
+
+### Fixed
+- Terminal no longer throws error when Toggle actions are not set in inspector
+
 ## 1.4.0 - 2021-12-07
 
 ### Changed
