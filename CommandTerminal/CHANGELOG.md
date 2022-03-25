@@ -1,7 +1,12 @@
 Changelog
 =========
 
-## 1.4.2 - 2021-12-20
+## 1.4.3 - 2022-03-25
+
+### Changed
+- Terminal input bindings are now set through input actions directly
+
+## 1.4.2 `ac5a975` - 2021-12-20
 
 ### Added
 - Methods for setting toggle actions

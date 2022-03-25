@@ -1,12 +1,10 @@
 using UnityEngine;
 using System.Text;
-using System.Collections;
-using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
 
 namespace CommandTerminal
 {
-    public enum TerminalState
+	public enum TerminalState
     {
         Close,
         OpenSmall,
@@ -29,31 +27,28 @@ namespace CommandTerminal
         [SerializeField]
         float ToggleSpeed = 360;
 
-        [SerializeField] int BufferSize = 512;
+        [SerializeField] InputAction ToggleHotkey;     
+        [SerializeField] InputAction ToggleFullHotkey;
+        [SerializeField] int BufferSize           = 512;
 
         [Header("Input")]
-        [SerializeField] InputActionReference ToggleHotkey;
-        [SerializeField] InputActionReference ToggleFullHotkey;
         [SerializeField] Font ConsoleFont;
-        [SerializeField] string InputCaret = ">";
-        [SerializeField] bool ShowGUIButtons = false;
-        [SerializeField] bool RightAlignButtons = false;
+        [SerializeField] string InputCaret        = ">";
+        [SerializeField] bool ShowGUIButtons      = false;
+        [SerializeField] bool RightAlignButtons   = false;
 
         [Header("Theme")]
         [Range(0, 1)]
-        [SerializeField] float InputContrast = 0.0f;
+        [SerializeField] float InputContrast      = 0.0f;
         [Range(0, 1)]
-        [SerializeField] float InputAlpha = 0.5f;
+        [SerializeField] float InputAlpha         = 0.5f;
 
-        [SerializeField] Color BackgroundColor = Color.black;
-        [SerializeField] Color ForegroundColor = Color.white;
-        [SerializeField] Color ShellColor = Color.white;
-        [SerializeField] Color InputColor = Color.cyan;
-        [SerializeField] Color WarningColor = Color.yellow;
-        [SerializeField] Color ErrorColor = Color.red;
-
-        InputAction toggleAction;
-        InputAction toggleFullAction;
+        [SerializeField] Color BackgroundColor    = Color.black;
+        [SerializeField] Color ForegroundColor    = Color.white;
+        [SerializeField] Color ShellColor         = Color.white;
+        [SerializeField] Color InputColor         = Color.cyan;
+        [SerializeField] Color WarningColor       = Color.yellow;
+        [SerializeField] Color ErrorColor         = Color.red;
 
         TerminalState state;
         TextEditor editor_state;
@@ -78,90 +73,65 @@ namespace CommandTerminal
         public static CommandHistory History { get; private set; }
         public static CommandAutocomplete Autocomplete { get; private set; }
 
-        public static bool IssuedError
-        {
+        public static bool IssuedError {
             get { return Shell.IssuedErrorMessage != null; }
         }
 
-        public bool IsClosed
-        {
+        public bool IsClosed {
             get { return state == TerminalState.Close && Mathf.Approximately(current_open_t, open_target); }
         }
 
-        public static void Log(string format, params object[] message)
-        {
+        public static void Log(string format, params object[] message) {
             Log(TerminalLogType.ShellMessage, format, message);
         }
 
-        public static void Log(TerminalLogType type, string format, params object[] message)
-        {
+        public static void Log(TerminalLogType type, string format, params object[] message) {
             Buffer.HandleLog(string.Format(format, message), type);
         }
 
-        public void SetState(TerminalState new_state)
-        {
+        public void SetState(TerminalState new_state) {
             input_fix = true;
             cached_command_text = command_text;
             command_text = "";
 
-            switch (new_state)
-            {
-                case TerminalState.Close:
-                    {
+            switch (new_state) {
+                case TerminalState.Close: {
+                    open_target = 0;
+                    break;
+                }
+                case TerminalState.OpenSmall: {
+                    open_target = Screen.height * MaxHeight * SmallTerminalRatio;
+                    if (current_open_t > open_target) {
+                        // Prevent resizing from OpenFull to OpenSmall if window y position
+                        // is greater than OpenSmall's target
                         open_target = 0;
-                        break;
+                        state = TerminalState.Close;
+                        return;
                     }
-                case TerminalState.OpenSmall:
-                    {
-                        open_target = Screen.height * MaxHeight * SmallTerminalRatio;
-                        if (current_open_t > open_target)
-                        {
-                            // Prevent resizing from OpenFull to OpenSmall if window y position
-                            // is greater than OpenSmall's target
-                            open_target = 0;
-                            state = TerminalState.Close;
-                            return;
-                        }
-                        real_window_size = open_target;
-                        scroll_position.y = int.MaxValue;
-                        break;
-                    }
+                    real_window_size = open_target;
+                    scroll_position.y = int.MaxValue;
+                    break;
+                }
                 case TerminalState.OpenFull:
-                default:
-                    {
-                        real_window_size = Screen.height * MaxHeight;
-                        open_target = real_window_size;
-                        break;
-                    }
+                default: {
+                    real_window_size = Screen.height * MaxHeight;
+                    open_target = real_window_size;
+                    break;
+                }
             }
 
             state = new_state;
         }
 
-        public void ToggleState(TerminalState new_state)
-        {
-            if (state == new_state)
-            {
+        public void ToggleState(TerminalState new_state) {
+            if (state == new_state) {
                 SetState(TerminalState.Close);
-            }
-            else
-            {
+            } else {
                 SetState(new_state);
             }
         }
 
-        public void SetToggleAction(InputAction action)
-        {
-            toggleAction = action;
-        }
-
-        public void SetToggleFullAction(InputAction action)
-        {
-            toggleFullAction = action;
-        }
-
-        void OnEnable()
-        {
+        void OnEnable() {
             Buffer = new CommandLog(BufferSize);
             Shell = new CommandShell();
             History = new CommandHistory();
@@ -169,17 +139,20 @@ namespace CommandTerminal
 
             // Hook Unity log events
             Application.logMessageReceivedThreaded += HandleUnityLog;
+
+			ToggleHotkey?.Enable();
+			ToggleFullHotkey?.Enable();
         }
 
-        void OnDisable()
-        {
+        void OnDisable() {
             Application.logMessageReceivedThreaded -= HandleUnityLog;
-        }
 
-        void Start()
-        {
-            if (ConsoleFont == null)
-            {
+			ToggleHotkey?.Disable();
+			ToggleFullHotkey?.Disable();
+		}
+
+        void Start() {
+            if (ConsoleFont == null) {
                 ConsoleFont = Font.CreateDynamicFontFromOSFont("Courier New", 16);
                 Debug.LogWarning("Command Console Warning: Please assign a font.");
             }
@@ -187,49 +160,35 @@ namespace CommandTerminal
             command_text = "";
             cached_command_text = command_text;
 
-            if (toggleAction == null)
-                toggleAction = ToggleHotkey ? ToggleHotkey.action : null;
-            if (toggleFullAction == null)
-                toggleFullAction = ToggleFullHotkey ? ToggleFullHotkey.action : null;
-
             SetupWindow();
             SetupInput();
             SetupLabels();
 
             Shell.RegisterCommands();
 
-            if (IssuedError)
-            {
+            if (IssuedError) {
                 Log(TerminalLogType.Error, "Error: {0}", Shell.IssuedErrorMessage);
             }
 
-            foreach (var command in Shell.Commands)
-            {
+            foreach (var command in Shell.Commands) {
                 Autocomplete.Register(command.Key);
             }
         }
 
-        void OnGUI()
-        {
-
-            if (toggleFullAction != null && toggleFullAction.WasPressedThisFrame())
-            {
+        void OnGUI() {
+            if (ToggleHotkey.WasReleasedThisFrame()) {
+                SetState(TerminalState.OpenSmall);
+                initial_open = true;
+            } else if (ToggleFullHotkey.WasPressedThisFrame()) {
                 SetState(TerminalState.OpenFull);
                 initial_open = true;
             }
-            else if (toggleAction != null && toggleAction.WasPressedThisFrame())
-            {
-                SetState(TerminalState.OpenSmall);
-                initial_open = true;
-            }
 
-            if (ShowGUIButtons)
-            {
+            if (ShowGUIButtons) {
                 DrawGUIButtons();
             }
 
-            if (IsClosed)
-            {
+            if (IsClosed) {
                 return;
             }
 
@@ -237,8 +196,7 @@ namespace CommandTerminal
             window = GUILayout.Window(88, window, DrawConsole, "", window_style);
         }
 
-        void SetupWindow()
-        {
+        void SetupWindow() {
             real_window_size = Screen.height * MaxHeight / 3;
             window = new Rect(0, current_open_t - real_window_size, Screen.width, real_window_size);
 
@@ -254,16 +212,14 @@ namespace CommandTerminal
             window_style.font = ConsoleFont;
         }
 
-        void SetupLabels()
-        {
+        void SetupLabels() {
             label_style = new GUIStyle();
             label_style.font = ConsoleFont;
             label_style.normal.textColor = ForegroundColor;
             label_style.wordWrap = true;
         }
 
-        void SetupInput()
-        {
+        void SetupInput() {
             input_style = new GUIStyle();
             input_style.padding = new RectOffset(4, 4, 4, 4);
             input_style.font = ConsoleFont;
@@ -282,8 +238,7 @@ namespace CommandTerminal
             input_style.normal.background = input_background_texture;
         }
 
-        void DrawConsole(int Window2D)
-        {
+        void DrawConsole(int Window2D) {
             GUILayout.BeginVertical();
 
             scroll_position = GUILayout.BeginScrollView(scroll_position, false, false, GUIStyle.none, GUIStyle.none);
@@ -291,60 +246,50 @@ namespace CommandTerminal
             DrawLogs();
             GUILayout.EndScrollView();
 
-            if (move_cursor)
-            {
+            if (move_cursor) {
                 CursorToEnd();
                 move_cursor = false;
             }
 
-            if (Event.current.Equals(Event.KeyboardEvent("escape")))
-            {
+            if (Event.current.Equals(Event.KeyboardEvent("escape"))) {
                 SetState(TerminalState.Close);
-            }
-            else if (Event.current.Equals(Event.KeyboardEvent("return"))
-              || Event.current.Equals(Event.KeyboardEvent("[enter]")))
-            {
+            } else if (Event.current.Equals(Event.KeyboardEvent("return"))
+                || Event.current.Equals(Event.KeyboardEvent("[enter]"))) {
                 EnterCommand();
-            }
-            else if (Event.current.Equals(Event.KeyboardEvent("up")))
-            {
+            } else if (Event.current.Equals(Event.KeyboardEvent("up"))) {
                 command_text = History.Previous();
                 move_cursor = true;
-            }
-            else if (Event.current.Equals(Event.KeyboardEvent("down")))
-            {
+            } else if (Event.current.Equals(Event.KeyboardEvent("down"))) {
                 command_text = History.Next();
-            }
-            else if (Event.current.Equals(Event.KeyboardEvent("tab")))
-            {
+            } else if (ToggleHotkey.WasPressedThisFrame()) {
+                ToggleState(TerminalState.OpenSmall);
+            } else if (Event.current.Equals(ToggleFullHotkey.WasPressedThisFrame())) {
+                ToggleState(TerminalState.OpenFull);
+            } else if (Event.current.Equals(Event.KeyboardEvent("tab"))) {
                 CompleteCommand();
                 move_cursor = true; // Wait till next draw call
             }
 
             GUILayout.BeginHorizontal();
 
-            if (InputCaret != "")
-            {
+            if (InputCaret != "") {
                 GUILayout.Label(InputCaret, input_style, GUILayout.Width(ConsoleFont.fontSize));
             }
 
             GUI.SetNextControlName("command_text_field");
             command_text = GUILayout.TextField(command_text, input_style);
 
-            if (input_fix && command_text.Length > 0)
-            {
+            if (input_fix && command_text.Length > 0) {
                 command_text = cached_command_text; // Otherwise the TextField picks up the ToggleHotkey character event
                 input_fix = false;                  // Prevents checking string Length every draw call
             }
 
-            if (initial_open)
-            {
+            if (initial_open) {
                 GUI.FocusControl("command_text_field");
                 initial_open = false;
             }
 
-            if (ShowGUIButtons && GUILayout.Button("| run", input_style, GUILayout.Width(Screen.width / 10)))
-            {
+            if (ShowGUIButtons && GUILayout.Button("| run", input_style, GUILayout.Width(Screen.width / 10))) {
                 EnterCommand();
             }
 
@@ -352,17 +297,14 @@ namespace CommandTerminal
             GUILayout.EndVertical();
         }
 
-        void DrawLogs()
-        {
-            foreach (var log in Buffer.Logs)
-            {
+        void DrawLogs() {
+            foreach (var log in Buffer.Logs) {
                 label_style.normal.textColor = GetLogColor(log.type);
                 GUILayout.Label(log.message, label_style);
             }
         }
 
-        void DrawGUIButtons()
-        {
+        void DrawGUIButtons() {
             int size = ConsoleFont.fontSize;
             float x_position = RightAlignButtons ? Screen.width - 7 * size : 0;
 
@@ -371,12 +313,9 @@ namespace CommandTerminal
             GUILayout.BeginArea(new Rect(x_position, current_open_t, 7 * size, size * 2));
             GUILayout.BeginHorizontal();
 
-            if (GUILayout.Button("Small", window_style))
-            {
+            if (GUILayout.Button("Small", window_style)) {
                 ToggleState(TerminalState.OpenSmall);
-            }
-            else if (GUILayout.Button("Full", window_style))
-            {
+            } else if (GUILayout.Button("Full", window_style)) {
                 ToggleState(TerminalState.OpenFull);
             }
 
@@ -384,24 +323,17 @@ namespace CommandTerminal
             GUILayout.EndArea();
         }
 
-        void HandleOpenness()
-        {
+        void HandleOpenness() {
             float dt = ToggleSpeed * Time.unscaledDeltaTime;
 
-            if (current_open_t < open_target)
-            {
+            if (current_open_t < open_target) {
                 current_open_t += dt;
                 if (current_open_t > open_target) current_open_t = open_target;
-            }
-            else if (current_open_t > open_target)
-            {
+            } else if (current_open_t > open_target) {
                 current_open_t -= dt;
                 if (current_open_t < open_target) current_open_t = open_target;
-            }
-            else
-            {
-                if (input_fix)
-                {
+            } else {
+                if (input_fix) {
                     input_fix = false;
                 }
                 return; // Already at target
@@ -410,14 +342,12 @@ namespace CommandTerminal
             window = new Rect(0, current_open_t - real_window_size, Screen.width, real_window_size);
         }
 
-        void EnterCommand()
-        {
+        void EnterCommand() {
             Log(TerminalLogType.Input, "{0}", command_text);
             Shell.RunCommand(command_text);
             History.Push(command_text);
 
-            if (IssuedError)
-            {
+            if (IssuedError) {
                 Log(TerminalLogType.Error, "Error: {0}", Shell.IssuedErrorMessage);
             }
 
@@ -425,26 +355,22 @@ namespace CommandTerminal
             scroll_position.y = int.MaxValue;
         }
 
-        void CompleteCommand()
-        {
+        void CompleteCommand() {
             string head_text = command_text;
             int format_width = 0;
 
             string[] completion_buffer = Autocomplete.Complete(ref head_text, ref format_width);
             int completion_length = completion_buffer.Length;
 
-            if (completion_length != 0)
-            {
+            if (completion_length != 0) {
                 command_text = head_text;
             }
 
-            if (completion_length > 1)
-            {
+            if (completion_length > 1) {
                 // Print possible completions
                 var log_buffer = new StringBuilder();
 
-                foreach (string completion in completion_buffer)
-                {
+                foreach (string completion in completion_buffer) {
                     log_buffer.Append(completion.PadRight(format_width + 4));
                 }
 
@@ -453,26 +379,21 @@ namespace CommandTerminal
             }
         }
 
-        void CursorToEnd()
-        {
-            if (editor_state == null)
-            {
+        void CursorToEnd() {
+            if (editor_state == null) {
                 editor_state = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
             }
 
             editor_state.MoveCursorToPosition(new Vector2(999, 999));
         }
 
-        void HandleUnityLog(string message, string stack_trace, LogType type)
-        {
+        void HandleUnityLog(string message, string stack_trace, LogType type) {
             Buffer.HandleLog(message, stack_trace, (TerminalLogType)type);
             scroll_position.y = int.MaxValue;
         }
 
-        Color GetLogColor(TerminalLogType type)
-        {
-            switch (type)
-            {
+        Color GetLogColor(TerminalLogType type) {
+            switch (type) {
                 case TerminalLogType.Message: return ForegroundColor;
                 case TerminalLogType.Warning: return WarningColor;
                 case TerminalLogType.Input: return InputColor;
